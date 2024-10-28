@@ -12,12 +12,24 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   run-start:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Configure Git credentials
+        run: |
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ github.token }}@github.com" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -27,13 +39,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Generate GitHub App token
-        id: generate_token
-        uses: tibdex/github-app-token@v2
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Run start script
         run: bun run start ${{ github.event.inputs.target_repo }}
         env:
@@ -41,8 +46,4 @@ jobs:
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          GIT_AUTHOR_NAME: "UbiquityOS Configurations Agent[bot]"
-          GIT_AUTHOR_EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
-          GIT_COMMITTER_NAME: "UbiquityOS Configurations Agent[bot]"
-          GIT_COMMITTER_EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
+          GITHUB_TOKEN: ${{ github.token }}
