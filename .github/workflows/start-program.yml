@@ -12,10 +12,6 @@ on:
         required: false
         type: string
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   run-start:
     runs-on: ubuntu-latest
@@ -45,8 +41,7 @@ jobs:
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
-          BOT_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           GIT_AUTHOR_NAME: "UbiquityOS Configurations Agent[bot]"
           GIT_AUTHOR_EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
           GIT_COMMITTER_NAME: "UbiquityOS Configurations Agent[bot]"

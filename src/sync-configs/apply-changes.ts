@@ -68,7 +68,6 @@ export async function applyChanges({
 
   try {
     const branchName = `sync-configs-${Date.now()}`;
-    const isGitHubActions = !!process.env.GITHUB_ACTIONS;
 
     if (isGitHubActions) {
       await pushToGitHubActions(git, target, branchName, isInteractive);
@@ -80,7 +79,15 @@ export async function applyChanges({
       await createAndLogPullRequest(target, branchName, defaultBranch, instruction);
     }
   } catch (error) {
-    console.error(`Error applying changes to ${target.url}:`, error);
+    if (error instanceof Error) {
+      console.error(`Error applying changes to ${target.url}:`, error.message);
+      if (error.stack) {
+        console.error("Stack trace:", error.stack);
+      }
+    } else {
+      console.error(`Error applying changes to ${target.url}:`, error);
+    }
+    throw error; // Re-throw to ensure the error is properly handled upstream
   }
 }
 
@@ -90,12 +97,20 @@ async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: s
     throw new Error("GITHUB_TOKEN is not set");
   }
 
+  console.log(`Attempting to push to ${target.url} using GitHub App token...`);
+
   const repoUrlWithoutProtocol = target.url.replace(/^https?:\/\//, "");
   const authenticatedRemoteUrl = `https://x-access-token:${token}@${repoUrlWithoutProtocol}`;
 
   if (!isInteractive) {
-    await git.checkoutLocalBranch(branchName);
-    await git.push(authenticatedRemoteUrl, branchName, ["-u"]);
+    try {
+      await git.checkoutLocalBranch(branchName);
+      await git.push(authenticatedRemoteUrl, branchName, ["-u"]);
+      console.log(`Successfully pushed branch ${branchName} to ${target.url}`);
+    } catch (error) {
+      console.error("Push failed with error:", error);
+      throw error;
+    }
   }
 }
 
