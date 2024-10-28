@@ -6,6 +6,14 @@ import { Target } from "./targets";
 
 export async function cloneOrPullRepo(target: Target, defaultBranch: string): Promise<void> {
   const repoPath = path.join(__dirname, STORAGE_DIR, target.localDir);
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token && process.env.GITHUB_ACTIONS) {
+    throw new Error("GITHUB_TOKEN is not set");
+  }
+
+  // Prepare authenticated URL if we have a token
+  const authenticatedUrl = token ? target.url.replace("https://", `https://x-access-token:${token}@`) : target.url;
 
   if (fs.existsSync(repoPath)) {
     // The repository directory exists; initialize git with this directory
@@ -13,8 +21,10 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
 
     if (await git.checkIsRepo()) {
       try {
+        console.log(`Fetching updates for ${target.url}...`);
         await git.fetch("origin");
         await git.reset(["--hard", `origin/${defaultBranch}`]);
+        console.log(`Successfully updated ${target.url}`);
       } catch (error) {
         console.error(`Error updating ${target.url}:`, error);
         throw error;
@@ -25,9 +35,11 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
   } else {
     // The directory does not exist; create it and perform git clone
     try {
+      console.log(`Cloning ${target.url}...`);
       fs.mkdirSync(repoPath, { recursive: true });
       const git: SimpleGit = simpleGit();
-      await git.clone(target.url, repoPath);
+      await git.clone(authenticatedUrl, repoPath);
+      console.log(`Successfully cloned ${target.url}`);
     } catch (error) {
       console.error(`Error cloning ${target.url}:`, error);
       throw error;
