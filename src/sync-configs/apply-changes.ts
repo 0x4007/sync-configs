@@ -33,19 +33,16 @@ export async function applyChanges({
     stderr.pipe(process.stderr);
   });
 
-  // Check for global Git config
-  const globalUserName = await git.getConfig("user.name", "global");
-  const globalUserEmail = await git.getConfig("user.email", "global");
-
-  if (!globalUserName.value || !globalUserEmail.value) {
-    // If global config is not set, use the bot credentials
-    const userName = "UbiquityOS Configurations Agent[bot]";
-    const userEmail = "ubiquity-os[bot]@users.noreply.github.com";
+  // Always use bot credentials in GitHub Actions
+  if (process.env.GITHUB_ACTIONS) {
+    const userName = process.env.GIT_AUTHOR_NAME || "UbiquityOS Configurations Agent[bot]";
+    const userEmail = process.env.GIT_AUTHOR_EMAIL || "ubiquity-os[bot]@users.noreply.github.com";
 
     await git.addConfig("user.name", userName, false, "local");
     await git.addConfig("user.email", userEmail, false, "local");
     console.log("Using bot credentials for Git operations.");
   } else {
+    // For local development, use global git config
     console.log("Using global Git config for operations.");
   }
 
@@ -118,8 +115,9 @@ async function createAndLogPullRequest(target: Target, branchName: string, defau
   try {
     const prUrl = await createPullRequest({ target, branchName, defaultBranch, instruction });
     console.log(`Pull request created: ${prUrl}`);
-  } catch (prError) {
-    console.error("Failed to create pull request:", prError.message);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Failed to create pull request:", errorMessage);
     console.log(`Branch '${branchName}' has been pushed. You may need to create the pull request manually.`);
   }
 }
