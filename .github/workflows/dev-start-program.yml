@@ -1,0 +1,47 @@
+name: Start Program
+
+on:
+  push:
+    branches:
+      - fix/actions-auth-2
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Configure Git
+        run: |
+          # Set up credentials for authentication
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ github.token }}@github.com" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+
+          # Set up commit identity
+          git config --global user.name "UbiquityOS Configurations Agent[bot]"
+          git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run start script
+        run: bun run start "https://github.com/ubiquity/.ubiquity-os.git"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EDITOR_INSTRUCTION: "insert all missing defaults"
+          INTERACTIVE: "false"
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
