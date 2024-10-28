@@ -1,5 +1,7 @@
 import * as path from "path";
-const CONFIG_FILE_PATH = ".github/.ubiquity-os.config.yml";
+
+export const CONFIG_FULL_PATH = ".github/.ubiquity-os.config.yml";
+const DEV_CONFIG_FULL_PATH = ".github/.ubiquity-os.config.dev.yml";
 
 const parserTarget = {
   type: "parser",
@@ -23,7 +25,7 @@ if (argv.length > 0) {
 // Always include the parser target
 targetUrls.unshift(parserTarget);
 
-export const targets: Target[] = targetUrls.map(({ type, url }) => {
+export const targets: Target[] = targetUrls.flatMap(({ type, url }) => {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+)(\.git)?$/);
   if (!match) {
     throw new Error(`Invalid GitHub URL: ${url}`);
@@ -32,15 +34,40 @@ export const targets: Target[] = targetUrls.map(({ type, url }) => {
   const owner = match[1];
   const repo = match[2].replace(".git", "");
   const isKernel = type === "parser";
+  const localDir = path.join(owner, repo);
 
-  return {
-    type,
-    owner,
-    repo,
-    localDir: path.join(owner, repo),
-    url,
-    filePath: isKernel ? "src/github/types/plugin-configuration.ts" : CONFIG_FILE_PATH,
-  };
+  if (isKernel) {
+    return [
+      {
+        type,
+        owner,
+        repo,
+        localDir,
+        url,
+        filePath: "src/github/types/plugin-configuration.ts",
+      },
+    ];
+  }
+
+  // Always return both prod and dev configs
+  return [
+    {
+      type,
+      owner,
+      repo,
+      localDir,
+      url,
+      filePath: CONFIG_FULL_PATH,
+    },
+    {
+      type,
+      owner,
+      repo,
+      localDir,
+      url,
+      filePath: DEV_CONFIG_FULL_PATH,
+    },
+  ];
 });
 
 export type Target = {

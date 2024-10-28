@@ -8,8 +8,8 @@ import * as path from "path";
 
 export async function processConfigurationRepository(target: Target, instruction: string, parserCode: string, isInteractive: boolean) {
   const filePath = path.resolve("src", "fixtures", target.localDir, target.filePath);
-
   if (!fs.existsSync(filePath)) {
+    console.trace({ filePath });
     console.log(`Skipping ${target.url} as the file ${target.filePath} does not exist.`);
     return;
   }
