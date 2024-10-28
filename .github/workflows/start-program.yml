@@ -41,4 +41,4 @@ jobs:
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
