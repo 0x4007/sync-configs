@@ -88,9 +88,9 @@ export async function applyChanges({
 }
 
 async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: string, isInteractive: boolean) {
-  const token = process.env.GITHUB_APP_TOKEN;
+  const token = process.env.GITHUB_TOKEN;
   if (!token) {
-    throw new Error("GITHUB_APP_TOKEN is not set");
+    throw new Error("GITHUB_TOKEN is not set");
   }
 
   const repoUrlWithoutProtocol = target.url.replace(/^https?:\/\//, "");

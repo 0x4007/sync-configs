@@ -12,7 +12,7 @@ export async function createPullRequest({
   defaultBranch: string;
   instruction: string;
 }) {
-  const octokit = new Octokit({ auth: process.env.GITHUB_APP_TOKEN });
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
   console.log(`Attempting to create PR for owner: ${target.owner}, repo: ${target.repo}`);
   console.log(`Branch: ${branchName}, Base: ${defaultBranch}`);
