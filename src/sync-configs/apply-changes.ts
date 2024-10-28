@@ -35,6 +35,9 @@ export async function applyChanges({
 
   const isGitHubActions = !!process.env.GITHUB_ACTIONS;
   console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
+  if (isGitHubActions) {
+    console.log(`Using workflow dispatcher's permissions (@${process.env.GITHUB_ACTOR})`);
+  }
 
   const defaultBranch = forceBranch || (await getDefaultBranch(target.url));
 
@@ -84,13 +87,11 @@ async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: s
     throw new Error("GITHUB_TOKEN is not set");
   }
 
-  console.log(`Attempting to push to ${target.url} using workflow dispatcher's permissions...`);
-  console.log(`Push will be authenticated as the workflow trigger user: @${process.env.GITHUB_ACTOR}`);
+  console.log(`Attempting to push to ${target.url}...`);
 
   if (!isInteractive) {
     try {
       await git.checkoutLocalBranch(branchName);
-      // Using simpler push now that credentials are configured globally
       await git.push("origin", branchName, ["-u"]);
       console.log(`Successfully pushed branch ${branchName} to ${target.url}`);
     } catch (error) {

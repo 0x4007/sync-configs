@@ -25,11 +25,16 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      - name: Configure Git credentials
+      - name: Configure Git
         run: |
+          # Set up credentials for authentication
           git config --global credential.helper store
           echo "https://x-access-token:${{ github.token }}@github.com" > ~/.git-credentials
           chmod 600 ~/.git-credentials
+
+          # Set up commit identity
+          git config --global user.name "UbiquityOS Configurations Agent[bot]"
+          git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
