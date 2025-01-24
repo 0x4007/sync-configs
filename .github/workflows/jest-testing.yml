@@ -1,29 +1,36 @@
-name: Run Jest testing suite
+name: Run Tests
 on:
   workflow_dispatch:
   pull_request:
 
 env:
   NODE_ENV: "test"
+  USE_MOCK_CLAUDE_RESPONSE: "true"
+  APP_ID: ${{ secrets.APP_ID }}
+  APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
 jobs:
   testing:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20.10.0"
-
       - uses: actions/checkout@master
         with:
           fetch-depth: 0
 
-      - name: Jest With Coverage
-        run: |
-          npm install
-          npm run test
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
-      - name: Add Jest Report to Summary
-        if: always()
-        run: echo "$(cat test-dashboard.md)" >> $GITHUB_STEP_SUMMARY
+      - name: Install Dependencies and Run Tests
+        run: |
+          bun install
+          bun test --coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/

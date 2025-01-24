@@ -22,12 +22,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.10.0"
+          node-version: 20.10.0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Install dependencies
         run: |
-          npm install
-          npm install -g tsx
+          bun install
+          bun install -g tsx
 
       - name: Get Installation ID
         id: get_installation

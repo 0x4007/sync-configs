@@ -1,24 +1,22 @@
 name: Spell Check
-
 on:
   push:
-
 jobs:
   spellcheck:
     name: Check for spelling errors
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.10.0"
-
+          node-version: 20.10.0
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
       - name: Install
-        run: npm install
-
+        run: bun install
       - name: Run cspell
-        run: npm run format:cspell
+        run: bun run format:cspell
