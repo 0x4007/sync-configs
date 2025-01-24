@@ -1,7 +1,7 @@
 import simpleGit, { SimpleGit } from "simple-git";
 
 export async function getDefaultBranch(repoUrl: string): Promise<string> {
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.AUTH_TOKEN;
   const authenticatedUrl = token ? repoUrl.replace("https://", `https://x-access-token:${token}@`) : repoUrl;
 
   try {

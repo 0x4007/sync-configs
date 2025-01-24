@@ -6,14 +6,14 @@ import { Target } from "./targets";
 
 export async function cloneOrPullRepo(target: Target, defaultBranch: string): Promise<void> {
   const repoPath = path.join(__dirname, STORAGE_DIR, target.localDir);
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.AUTH_TOKEN;
 
   if (!token && process.env.GITHUB_ACTIONS) {
-    throw new Error("GITHUB_TOKEN is not set");
+    throw new Error("AUTH_TOKEN is not set");
   }
 
   // Prepare authenticated URL if we have a token
-  const authenticatedUrl = token ? target.url.replace("https://github.com", `https://${process.env.GITHUB_ACTOR}:${token}@github.com`) : target.url;
+  const authenticatedUrl = token ? target.url.replace("https://github.com", `https://${process.env.ACTOR}:${token}@github.com`) : target.url;
 
   if (fs.existsSync(repoPath)) {
     // The repository directory exists; initialize git with this directory
