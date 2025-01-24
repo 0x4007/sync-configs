@@ -59,9 +59,6 @@ export async function applyChanges({
   const isGitHubActions = !!process.env.GITHUB_ACTIONS;
 
   console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
-  if (isGitHubActions) {
-    console.log(`Using workflow token`);
-  }
 
   await setupAuthentication(git, target.url);
   const defaultBranch = forceBranch || (await getDefaultBranch(target.url));
