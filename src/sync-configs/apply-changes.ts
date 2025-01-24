@@ -24,10 +24,10 @@ function initializeGit(localDir: string): SimpleGit {
 }
 
 async function setupAuthentication(git: SimpleGit, targetUrl: string) {
-  if (!process.env.PERSONAL_ACCESS_TOKEN) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+  if (!process.env.GITHUB_TOKEN) {
+    throw new Error("GITHUB_TOKEN is not set");
   }
-  const authenticatedUrl = targetUrl.replace("https://", `https://x-access-token:${process.env.PERSONAL_ACCESS_TOKEN}@`);
+  const authenticatedUrl = targetUrl.replace("https://", `https://x-access-token:${process.env.GITHUB_TOKEN}@`);
   await git.removeRemote("origin").catch(() => null);
   await git.addRemote("origin", authenticatedUrl);
   console.log("Configured authenticated remote URL");
@@ -60,7 +60,7 @@ export async function applyChanges({
 
   console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
   if (isGitHubActions) {
-    console.log(`Using PERSONAL_ACCESS_TOKEN`);
+    console.log(`Using workflow token`);
   }
 
   await setupAuthentication(git, target.url);
