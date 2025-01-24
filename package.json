@@ -19,7 +19,7 @@
     "knip": "knip --config .github/knip.ts",
     "knip-ci": "knip --no-exit-code --reporter json --config .github/knip.ts",
     "prepare": "husky install",
-    "test": "jest --setupFiles dotenv/config --coverage"
+    "test": "bun test --coverage"
   },
   "keywords": [
     "typescript",
