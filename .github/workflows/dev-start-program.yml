@@ -9,6 +9,16 @@ permissions:
   contents: write
   pull-requests: write
   repository-projects: write
+  id-token: write
+  actions: write
+  checks: write
+  deployments: write
+  discussions: write
+  issues: write
+  packages: write
+  pages: write
+  security-events: write
+  statuses: write
 
 jobs:
   run-start:
@@ -17,6 +27,16 @@ jobs:
       contents: write
       pull-requests: write
       repository-projects: write
+      id-token: write
+      actions: write
+      checks: write
+      deployments: write
+      discussions: write
+      issues: write
+      packages: write
+      pages: write
+      security-events: write
+      statuses: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
