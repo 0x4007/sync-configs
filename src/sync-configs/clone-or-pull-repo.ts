@@ -4,8 +4,18 @@ import simpleGit, { SimpleGit } from "simple-git";
 import { STORAGE_DIR } from "./sync-configs";
 import { Target } from "./targets";
 
+async function configureGit(git: SimpleGit): Promise<void> {
+  const token = process.env.AUTH_TOKEN;
+  if (!token) {
+    throw new Error("AUTH_TOKEN is not set");
+  }
+
+  await git.addConfig("http.https://github.com.extraheader", `AUTHORIZATION: bearer ${token}`, false, "global");
+}
+
 async function updateExistingRepo(git: SimpleGit, target: Target, defaultBranch: string): Promise<void> {
   console.log(`Fetching updates for ${target.url}...`);
+  await configureGit(git);
   await git.fetch("origin");
   await git.checkout(defaultBranch);
   console.log(`Successfully updated ${target.url}`);
@@ -26,11 +36,13 @@ async function handleCloneError(error: unknown, git: SimpleGit, target: Target, 
   throw error;
 }
 
-async function cloneNewRepo(git: SimpleGit, authenticatedUrl: string, repoPath: string, target: Target, defaultBranch: string): Promise<void> {
+async function cloneNewRepo(git: SimpleGit, repoPath: string, target: Target, defaultBranch: string): Promise<void> {
   try {
-    await git.clone(authenticatedUrl, repoPath);
-    await git.cwd(repoPath).fetch("origin");
-    await git.cwd(repoPath).checkout(defaultBranch);
+    await configureGit(git);
+    await git.clone(target.url, repoPath);
+    const repoGit = git.cwd(repoPath);
+    await repoGit.fetch("origin");
+    await repoGit.checkout(defaultBranch);
     console.log(`Successfully cloned ${target.url}`);
   } catch (error: unknown) {
     await handleCloneError(error, git.cwd(repoPath), target, defaultBranch);
@@ -39,15 +51,10 @@ async function cloneNewRepo(git: SimpleGit, authenticatedUrl: string, repoPath: 
 
 export async function cloneOrPullRepo(target: Target, defaultBranch: string): Promise<void> {
   const repoPath = path.join(__dirname, STORAGE_DIR, target.localDir);
-  const token = process.env.AUTH_TOKEN;
 
-  if (!token && process.env.GITHUB_ACTIONS) {
+  if (!process.env.AUTH_TOKEN && process.env.GITHUB_ACTIONS) {
     throw new Error("AUTH_TOKEN is not set");
   }
-
-  const authenticatedUrl = token
-    ? target.url.replace("https://github.com", `https://x-access-token:${token}@github.com`)
-    : target.url;
 
   if (fs.existsSync(repoPath)) {
     const git: SimpleGit = simpleGit(repoPath);
@@ -67,7 +74,7 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
   try {
     console.log(`Cloning ${target.url}...`);
     fs.mkdirSync(repoPath, { recursive: true });
-    await cloneNewRepo(simpleGit(), authenticatedUrl, repoPath, target, defaultBranch);
+    await cloneNewRepo(simpleGit(), repoPath, target, defaultBranch);
   } catch (error) {
     console.error(`Error cloning ${target.url}:`, error);
     throw error;

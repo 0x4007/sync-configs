@@ -15,6 +15,9 @@ on:
 jobs:
   run-start:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,8 +41,10 @@ jobs:
         run: |
           git config --global user.name "UbiquityOS Configurations Agent[bot]"
           git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
+          git config --global --unset credential.helper
           git config --global credential.helper store
-          echo "https://x-access-token:${{ steps.generate_token.outputs.token }}@github.com" > ~/.git-credentials
+          git config --global url."https://".insteadOf git://
+          git config --global http.https://github.com.extraheader "AUTHORIZATION: bearer ${{ steps.generate_token.outputs.token }}"
 
       - name: Run start script
         run: bun run start ${{ github.event.inputs.target_repo }}
