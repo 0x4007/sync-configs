@@ -30,15 +30,63 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install Octokit Auth App
+        run: npm install @octokit/auth-app
+
       - name: Get Installation ID
         id: get_installation
         run: |
-          response=$(curl -s -H "Authorization: Bearer $(npx @octokit/auth-app -a ${{ secrets.APP_ID }} -p ${{ secrets.APP_PRIVATE_KEY }})" \
-                        -H "Accept: application/vnd.github.machine-man-preview+json" \
-                        https://api.github.com/app/installations)
-          installation_id=$(echo "$response" | jq -r '.[] | select(.account.login=="ubiquity") | .id')
-          echo "installation_id=$installation_id" >> $GITHUB_ENV
-          echo "INSTALLATION_ID=$installation_id" >> $GITHUB_OUTPUT
+          # Create a temporary file for the private key
+          echo "${{ secrets.APP_PRIVATE_KEY }}" > private-key.pem
+
+          # Generate JWT token using node
+          TOKEN=$(node -e "
+            const { createAppAuth } = require('@octokit/auth-app');
+            const fs = require('fs');
+
+            (async () => {
+              try {
+                const privateKey = fs.readFileSync('private-key.pem', 'utf8');
+                const auth = createAppAuth({
+                  appId: ${{ secrets.APP_ID }},
+                  privateKey: privateKey,
+                });
+                const { token } = await auth({ type: 'app' });
+                process.stdout.write(token);
+              } catch (error) {
+                console.error('Error:', error);
+                process.exit(1);
+              }
+            })();
+          ")
+
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to generate token"
+            exit 1
+          fi
+
+          # Get installation ID using the JWT token
+          RESPONSE=$(curl -s \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/orgs/ubiquity/installation)
+
+          if ! echo "$RESPONSE" | jq -e .id > /dev/null 2>&1; then
+            echo "Failed to get installation ID. Response: $RESPONSE"
+            exit 1
+          fi
+
+          INSTALLATION_ID=$(echo "$RESPONSE" | jq -r .id)
+          if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "null" ]; then
+            echo "Invalid installation ID"
+            exit 1
+          fi
+
+          echo "installation_id=$INSTALLATION_ID" >> $GITHUB_ENV
+          echo "INSTALLATION_ID=$INSTALLATION_ID" >> $GITHUB_OUTPUT
+
+          # Clean up
+          rm private-key.pem
 
       - name: Generate GitHub App token
         id: generate_token
