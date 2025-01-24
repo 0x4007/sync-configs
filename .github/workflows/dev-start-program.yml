@@ -46,4 +46,4 @@ jobs:
           INTERACTIVE: "false"
           ACTOR: "ubiquity-os[bot]"
           EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
-          AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          AUTH_TOKEN: ${{ steps.generate_token.outputs.token }}
