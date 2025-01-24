@@ -50,4 +50,5 @@ jobs:
           EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
           APP_ID: ${{ secrets.APP_ID }}
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          USE_MOCK_CLAUDE_RESPONSE: "false"
+          USE_MOCK_CLAUDE_RESPONSE: "true"
+          AUTH_TOKEN: ${{ steps.generate_token.outputs.token }}
