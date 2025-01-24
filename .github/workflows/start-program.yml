@@ -49,4 +49,4 @@ jobs:
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
           # PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PERSONAL_ACCESS_TOKEN: ${{ steps.generate_token.outputs.token }}
