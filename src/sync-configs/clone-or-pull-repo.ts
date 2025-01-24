@@ -39,6 +39,9 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
       fs.mkdirSync(repoPath, { recursive: true });
       const git: SimpleGit = simpleGit();
       await git.clone(authenticatedUrl, repoPath);
+      // After clone, fetch to ensure we have all refs
+      await git.cwd(repoPath).fetch("origin");
+      await git.reset(["--hard", `origin/${defaultBranch}`]);
       console.log(`Successfully cloned ${target.url}`);
     } catch (error) {
       console.error(`Error cloning ${target.url}:`, error);
