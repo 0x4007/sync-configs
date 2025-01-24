@@ -36,8 +36,6 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: '["ubiquity/.ubiquity-os"]'
-          permissions: '{"contents": "write", "pull_requests": "write"}'
 
       - name: Configure Git
         run: |
