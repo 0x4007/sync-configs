@@ -12,7 +12,7 @@ function initializeGit(localDir: string): SimpleGit {
     binary: "git",
     maxConcurrentProcesses: 6,
     trimmed: false,
-    config: ["user.name=UbiquityOS Configurations Agent[bot]", "user.email=ubiquity-os[bot]@users.noreply.github.com"],
+    config: [`user.name=${process.env.GITHUB_ACTOR}`, `user.email=${process.env.GITHUB_ACTOR}@users.noreply.github.com`],
   });
 
   git.outputHandler((command, stdout, stderr) => {
