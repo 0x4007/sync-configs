@@ -5,38 +5,9 @@ on:
     branches:
       - fix/actions-auth-3
 
-permissions:
-  contents: write
-  pull-requests: write
-  repository-projects: write
-  id-token: write
-  actions: write
-  checks: write
-  deployments: write
-  discussions: write
-  issues: write
-  packages: write
-  pages: write
-  security-events: write
-  statuses: write
-
 jobs:
   run-start:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
-      id-token: write
-      actions: write
-      checks: write
-      deployments: write
-      discussions: write
-      issues: write
-      packages: write
-      pages: write
-      security-events: write
-      statuses: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,7 +17,7 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           git config --global credential.helper store
-          echo "https://${{ github.actor }}:${{ github.token }}@github.com" > ~/.git-credentials
+          echo "https://${{ github.actor }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com" > ~/.git-credentials
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -63,6 +34,4 @@ jobs:
           EDITOR_INSTRUCTION: "insert all missing defaults"
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          # GITHUB_TOKEN: ${{ github.token }}
-          # GIT_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          GIT_AUTH_TOKEN: ${{ github.token }}
+          GIT_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
