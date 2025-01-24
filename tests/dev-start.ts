@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import * as fs from "fs";
 import * as jwt from "jsonwebtoken";
 import * as path from "path";
+import simpleGit from "simple-git";
 
 // Load environment variables from .env file
 config();
@@ -15,15 +16,12 @@ async function generateGitHubAppToken() {
   const payload = {
     iat: now - 60, // Issued 60 seconds ago
     exp: now + 10 * 60, // Expires in 10 minutes
-    iss: process.env.APP_ID,
+    iss: getRequiredEnvVar("APP_ID"),
   };
 
   try {
-    if (!process.env.APP_PRIVATE_KEY) {
-      throw new Error("APP_PRIVATE_KEY environment variable is required");
-    }
-
-    const token = jwt.sign(payload, process.env.APP_PRIVATE_KEY, {
+    const privateKey = getRequiredEnvVar("APP_PRIVATE_KEY");
+    const token = jwt.sign(payload, privateKey, {
       algorithm: "RS256",
     });
 
@@ -73,25 +71,58 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
-// Configure Git
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} environment variable must be set`);
+  }
+  return value;
+}
+
+// Clean up any stale git lock files
+function cleanupGitLocks(repoPath: string) {
+  const lockFiles = [path.join(repoPath, ".git", "index.lock"), path.join(repoPath, ".git", "HEAD.lock")];
+
+  for (const lockFile of lockFiles) {
+    if (fs.existsSync(lockFile)) {
+      try {
+        fs.unlinkSync(lockFile);
+        console.log(`Removed stale lock file: ${lockFile}`);
+      } catch (error) {
+        console.warn(`Failed to remove lock file ${lockFile}:`, error);
+      }
+    }
+  }
+}
+
+// Configure Git locally for the test repository
 async function configureGit() {
   try {
     const token = await generateGitHubAppToken();
+    const testRepoPath = path.join(__dirname, "..", "src", "fixtures");
 
-    execSync(`git config --global user.name "${process.env.ACTOR}"`);
-    execSync(`git config --global user.email "${process.env.EMAIL}"`);
-    execSync("git config --global credential.helper store");
+    // Ensure the fixtures directory exists and clean up any stale locks
+    fs.mkdirSync(testRepoPath, { recursive: true });
+    cleanupGitLocks(testRepoPath);
 
-    // Create git credentials file
-    const homeDir = process.env.HOME || process.env.USERPROFILE;
-    if (!homeDir) {
-      throw new Error("Could not determine home directory");
-    }
+    const git = simpleGit(testRepoPath);
 
-    const gitCredentialsPath = path.join(homeDir, ".git-credentials");
-    fs.writeFileSync(gitCredentialsPath, `https://${process.env.ACTOR}:${token}@github.com\n`);
+    // Configure git locally
+    const actor = getRequiredEnvVar("ACTOR");
+    const email = getRequiredEnvVar("EMAIL");
 
-    console.log("Git configuration completed successfully");
+    await git.addConfig("user.name", actor, false, "local");
+    await git.addConfig("user.email", email, false, "local");
+    await git.addConfig("credential.helper", "store", false, "local");
+
+    // Store credentials in the local repository
+    const credentialsPath = path.join(testRepoPath, ".git-credentials");
+    fs.writeFileSync(credentialsPath, `https://${actor}:${token}@github.com\n`);
+
+    // Set the credential file path locally
+    await git.addConfig("credential.file", credentialsPath, false, "local");
+
+    console.log("Git configuration completed successfully for test repository");
     return token;
   } catch (error) {
     console.error("Error configuring git:", error);
@@ -113,12 +144,12 @@ async function main() {
       stdio: "inherit",
       env: {
         ...process.env,
-        // Ensure these specific environment variables are set
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        EDITOR_INSTRUCTION: process.env.EDITOR_INSTRUCTION,
-        INTERACTIVE: process.env.INTERACTIVE,
-        ACTOR: process.env.ACTOR,
-        EMAIL: process.env.EMAIL,
+        // Ensure these specific environment variables are set with proper validation
+        ANTHROPIC_API_KEY: getRequiredEnvVar("ANTHROPIC_API_KEY"),
+        EDITOR_INSTRUCTION: getRequiredEnvVar("EDITOR_INSTRUCTION"),
+        INTERACTIVE: getRequiredEnvVar("INTERACTIVE"),
+        ACTOR: getRequiredEnvVar("ACTOR"),
+        EMAIL: getRequiredEnvVar("EMAIL"),
         AUTH_TOKEN: token, // Use the GitHub App token instead of AUTH_TOKEN
         USE_MOCK_CLAUDE_RESPONSE: "true", // Short circuit Claude response in tests
       },

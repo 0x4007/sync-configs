@@ -8,6 +8,7 @@
     "node": "20.10.0"
   },
   "scripts": {
+    "configure-git": "tsx scripts/configure-local-git.ts",
     "start": "tsx src/index.ts",
     "dev-start": "tsx tests/dev-start.ts",
     "build": "tsx build/esbuild-build.ts",
