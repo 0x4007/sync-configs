@@ -35,6 +35,11 @@ jobs:
           installation_retrieval_mode: organization
           installation_retrieval_payload: ubiquity
 
+      - name: Debug Token Generation
+        run: |
+          echo "Installation ID from token generation: ${{ steps.generate_token.outputs.installation_id }}"
+          echo "Token exists: ${{ steps.generate_token.outputs.token != '' }}"
+
       - name: Configure Git
         run: |
           git config --global user.name "ubiquity-os[bot]"
