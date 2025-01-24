@@ -20,30 +20,6 @@ function cleanupGitLocks(repoPath: string) {
   }
 }
 
-function getRequiredEnvVar(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} environment variable must be set`);
-  }
-  return value;
-}
-
-const ACTOR = getRequiredEnvVar("ACTOR");
-const EMAIL = getRequiredEnvVar("EMAIL");
-
-async function shouldConfigureGitCredentials(repoPath: string): Promise<boolean> {
-  const fixturesPath = path.join(__dirname, "..", "fixtures");
-  return repoPath.startsWith(fixturesPath);
-}
-
-async function configureLocalGitCredentials(git: SimpleGit, repoPath: string): Promise<void> {
-  if (await shouldConfigureGitCredentials(repoPath)) {
-    await git.addConfig("credential.helper", "store", false, "local");
-    await git.addConfig("user.name", ACTOR, false, "local");
-    await git.addConfig("user.email", EMAIL, false, "local");
-  }
-}
-
 export async function cloneOrPullRepo(target: Target, defaultBranch: string): Promise<void> {
   const repoPath = path.join(__dirname, STORAGE_DIR, target.localDir);
   const token = process.env.AUTH_TOKEN;
