@@ -26,12 +26,14 @@ export function cleanupGitLocks(repoPath: string): void {
 // Configure Git locally for the test repository
 export async function configureGit(): Promise<string> {
   try {
-    const token = await generateGitHubAppToken();
     const fixturesPath = path.join(__dirname, "..", "..", "src", "fixtures");
     fs.mkdirSync(fixturesPath, { recursive: true });
 
     // Get list of target repositories
     const { targets } = await import("../../src/sync-configs/targets");
+
+    // Generate GitHub token using first target's credentials
+    const token = await generateGitHubAppToken(targets[0].owner, targets[0].repo);
 
     // Configure each repository directory
     for (const target of targets) {

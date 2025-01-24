@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { cleanupBranches } from "./branch-manager";
-import { GITHUB_REPO_URL, requiredEnvVars } from "./constants";
+import { GITHUB_OWNER, GITHUB_REPO, GITHUB_REPO_URL, requiredEnvVars } from "./constants";
 import { getRequiredEnvVar, validateEnvVars } from "./env-utils";
 import { configureGit } from "./git-config";
 import { generateGitHubAppToken } from "./github-token";
@@ -50,7 +50,7 @@ async function main() {
 // Execute main function and handle cleanup
 main().then(async () => {
   // Get a fresh token for cleanup
-  const token = await generateGitHubAppToken();
+  const token = await generateGitHubAppToken(GITHUB_OWNER, GITHUB_REPO);
   process.env.AUTH_TOKEN = token;
   await cleanupBranches();
 }).catch(console.error);
