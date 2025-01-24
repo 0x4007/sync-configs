@@ -12,9 +12,8 @@ on:
         required: false
         type: string
 
-permissions:
-  contents: write
-  pull-requests: write
+# This allows the token to access other repositories in the organization
+permissions: write-all
 
 jobs:
   run-start:
@@ -23,7 +22,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -45,4 +44,4 @@ jobs:
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

@@ -34,12 +34,20 @@ export async function applyChanges({
   });
 
   const isGitHubActions = !!process.env.GITHUB_ACTIONS;
-  console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
+  console.log(`Operating in ${isGitHubActions ? 'GitHub Actions' : 'local'} environment`);
   if (isGitHubActions) {
     console.log(`Using workflow dispatcher's permissions (@${process.env.GITHUB_ACTOR})`);
   }
 
   const defaultBranch = forceBranch || (await getDefaultBranch(target.url));
+
+  // Set up authenticated remote URL if we have a token
+  if (process.env.GITHUB_TOKEN) {
+    const authenticatedUrl = target.url.replace('https://', `https://x-access-token:${process.env.GITHUB_TOKEN}@`);
+    await git.removeRemote('origin').catch(() => null); // Ignore error if remote doesn't exist
+    await git.addRemote('origin', authenticatedUrl);
+    console.log('Configured authenticated remote URL');
+  }
 
   await git.checkout(defaultBranch);
   await git.pull("origin", defaultBranch);
