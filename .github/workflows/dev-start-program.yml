@@ -3,7 +3,10 @@ name: DEV Start Program
 on:
   push:
     branches:
-      - chore/use-ubiquity-os-auth
+      - main
+      - develop
+      - 'feature/**'
+      - 'fix/**'
 
 jobs:
   run-start:
@@ -32,10 +35,10 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "ubiquity-os[bot]"
+          git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
           git config --global credential.helper store
-          echo "https://${{ github.actor }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com" > ~/.git-credentials
+          echo "https://ubiquity-os[bot]:${{ steps.generate_token.outputs.token }}@github.com" > ~/.git-credentials
 
       - name: Run start script
         run: bun run start "https://github.com/ubiquity/.ubiquity-os.git"
@@ -45,4 +48,6 @@ jobs:
           INTERACTIVE: "false"
           ACTOR: "ubiquity-os[bot]"
           EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
-          AUTH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          USE_MOCK_CLAUDE_RESPONSE: "false"
