@@ -6,10 +6,10 @@ import { Target } from "./targets";
 
 export async function cloneOrPullRepo(target: Target, defaultBranch: string): Promise<void> {
   const repoPath = path.join(__dirname, STORAGE_DIR, target.localDir);
-  const token = process.env.PERSONAL_ACCESS_TOKEN;
+  const token = process.env.GITHUB_TOKEN;
 
   if (!token && process.env.GITHUB_ACTIONS) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+    throw new Error("GITHUB_TOKEN is not set");
   }
 
   // Prepare authenticated URL if we have a token

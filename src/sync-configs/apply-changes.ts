@@ -12,7 +12,7 @@ function initializeGit(localDir: string): SimpleGit {
     binary: "git",
     maxConcurrentProcesses: 6,
     trimmed: false,
-    config: [`user.name=${process.env.GITHUB_ACTOR}`, `user.email=${process.env.GITHUB_ACTOR}@users.noreply.github.com`],
+    config: [`user.name=${process.env.GITHUB_ACTOR}`, `user.email=${process.env.GITHUB_EMAIL}`],
   });
 
   git.outputHandler((command, stdout, stderr) => {
@@ -24,10 +24,10 @@ function initializeGit(localDir: string): SimpleGit {
 }
 
 async function setupAuthentication(git: SimpleGit, targetUrl: string) {
-  if (!process.env.PERSONAL_ACCESS_TOKEN) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+  if (!process.env.GITHUB_TOKEN) {
+    throw new Error("GITHUB_TOKEN is not set");
   }
-  const authenticatedUrl = targetUrl.replace("https://github.com", `https://${process.env.GITHUB_ACTOR}:${process.env.PERSONAL_ACCESS_TOKEN}@github.com`);
+  const authenticatedUrl = targetUrl.replace("https://github.com", `https://${process.env.GITHUB_ACTOR}:${process.env.GITHUB_TOKEN}@github.com`);
   await git.removeRemote("origin").catch(() => null);
   await git.addRemote("origin", authenticatedUrl);
   console.log("Configured authenticated remote URL");
@@ -35,7 +35,7 @@ async function setupAuthentication(git: SimpleGit, targetUrl: string) {
 
 function createCommitMessage(instruction: string, isGitHubActions: boolean): string {
   if (isGitHubActions) {
-    return ["chore: update", instruction, `Requested by @${process.env.GITHUB_ACTOR}`].join("\n\n");
+    return ["chore: update", instruction, `Via @${process.env.GITHUB_ACTOR}`].join("\n\n");
   }
   return ["chore: update configuration using UbiquityOS Configurations Agent", instruction].join("\n\n");
 }

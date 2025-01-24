@@ -30,9 +30,9 @@ export async function createPullRequest({
   defaultBranch: string;
   instruction: string;
 }) {
-  const token = process.env.PERSONAL_ACCESS_TOKEN;
+  const token = process.env.GITHUB_TOKEN;
   if (!token) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+    throw new Error("GITHUB_TOKEN is not set");
   }
 
   const octokit = new Octokit({ auth: token });
@@ -49,7 +49,7 @@ export async function createPullRequest({
       title: `chore: update \`${configFileName}\``,
       head: branchName,
       base: defaultBranch,
-      body: `Requested by @${process.env.GITHUB_ACTOR}:
+      body: `Via @${process.env.GITHUB_ACTOR}:
 
 > ${instruction}`,
     });

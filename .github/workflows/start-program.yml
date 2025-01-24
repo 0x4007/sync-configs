@@ -47,6 +47,6 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
-          GITHUB_ACTOR: ${{ github.actor }}
-          # PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          PERSONAL_ACCESS_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_ACTOR: "ubiquity-os[bot]"
+          GITHUB_EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
