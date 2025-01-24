@@ -5,7 +5,8 @@
   "ignore": ["node_modules/*"],
   "delay": 5000,
   "events": {
-    "exit": "rm -f src/fixtures/ubiquity/.ubiquity-os/.git/index.lock",
-    "crash": "rm -f src/fixtures/ubiquity/.ubiquity-os/.git/index.lock"
+    "restart": "rm -rf src/fixtures/*",
+    "exit": "rm -rf src/fixtures/*",
+    "crash": "rm -rf src/fixtures/*"
   }
 }

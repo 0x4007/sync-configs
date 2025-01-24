@@ -1,46 +1,38 @@
-import { execSync } from 'child_process';
-import { config } from 'dotenv';
-import * as fs from 'fs';
-import * as jwt from 'jsonwebtoken';
-import * as path from 'path';
+import { execSync } from "child_process";
+import { config } from "dotenv";
+import * as fs from "fs";
+import * as jwt from "jsonwebtoken";
+import * as path from "path";
 
 // Load environment variables from .env file
 config();
 
-const requiredEnvVars = [
-  'ANTHROPIC_API_KEY',
-  'EDITOR_INSTRUCTION',
-  'INTERACTIVE',
-  'ACTOR',
-  'EMAIL',
-  'APP_ID',
-  'APP_PRIVATE_KEY'
-];
+const requiredEnvVars = ["ANTHROPIC_API_KEY", "EDITOR_INSTRUCTION", "INTERACTIVE", "ACTOR", "EMAIL", "APP_ID", "APP_PRIVATE_KEY"];
 
 // Function to generate GitHub App JWT token
 async function generateGitHubAppToken() {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iat: now - 60, // Issued 60 seconds ago
-    exp: now + (10 * 60), // Expires in 10 minutes
-    iss: process.env.APP_ID
+    exp: now + 10 * 60, // Expires in 10 minutes
+    iss: process.env.APP_ID,
   };
 
   try {
     if (!process.env.APP_PRIVATE_KEY) {
-      throw new Error('APP_PRIVATE_KEY environment variable is required');
+      throw new Error("APP_PRIVATE_KEY environment variable is required");
     }
 
     const token = jwt.sign(payload, process.env.APP_PRIVATE_KEY, {
-      algorithm: 'RS256'
+      algorithm: "RS256",
     });
 
     // Exchange JWT for installation token
-    const response = await fetch('https://api.github.com/app/installations', {
+    const response = await fetch("https://api.github.com/app/installations", {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
     });
 
     if (!response.ok) {
@@ -49,20 +41,17 @@ async function generateGitHubAppToken() {
 
     const installations = await response.json();
     if (!installations.length) {
-      throw new Error('No installations found for this GitHub App');
+      throw new Error("No installations found for this GitHub App");
     }
 
     const installationId = installations[0].id;
-    const accessResponse = await fetch(
-      `https://api.github.com/app/installations/${installationId}/access_tokens`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      }
-    );
+    const accessResponse = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
 
     if (!accessResponse.ok) {
       throw new Error(`Failed to get access token: ${accessResponse.statusText}`);
@@ -71,7 +60,7 @@ async function generateGitHubAppToken() {
     const { token: installationToken } = await accessResponse.json();
     return installationToken;
   } catch (error) {
-    console.error('Error generating GitHub App token:', error);
+    console.error("Error generating GitHub App token:", error);
     throw error;
   }
 }
@@ -91,24 +80,21 @@ async function configureGit() {
 
     execSync(`git config --global user.name "${process.env.ACTOR}"`);
     execSync(`git config --global user.email "${process.env.EMAIL}"`);
-    execSync('git config --global credential.helper store');
+    execSync("git config --global credential.helper store");
 
     // Create git credentials file
     const homeDir = process.env.HOME || process.env.USERPROFILE;
     if (!homeDir) {
-      throw new Error('Could not determine home directory');
+      throw new Error("Could not determine home directory");
     }
 
-    const gitCredentialsPath = path.join(homeDir, '.git-credentials');
-    fs.writeFileSync(
-      gitCredentialsPath,
-      `https://${process.env.ACTOR}:${token}@github.com\n`
-    );
+    const gitCredentialsPath = path.join(homeDir, ".git-credentials");
+    fs.writeFileSync(gitCredentialsPath, `https://${process.env.ACTOR}:${token}@github.com\n`);
 
-    console.log('Git configuration completed successfully');
+    console.log("Git configuration completed successfully");
     return token;
   } catch (error) {
-    console.error('Error configuring git:', error);
+    console.error("Error configuring git:", error);
     process.exit(1);
   }
 }
@@ -122,9 +108,9 @@ async function main() {
     const token = await configureGit();
 
     // Run the start script with the repository URL
-    console.log('Running start script...');
+    console.log("Running start script...");
     execSync(`bun run start "${repoUrl}"`, {
-      stdio: 'inherit',
+      stdio: "inherit",
       env: {
         ...process.env,
         // Ensure these specific environment variables are set
@@ -134,13 +120,13 @@ async function main() {
         ACTOR: process.env.ACTOR,
         EMAIL: process.env.EMAIL,
         AUTH_TOKEN: token, // Use the GitHub App token instead of AUTH_TOKEN
-        USE_MOCK_CLAUDE_RESPONSE: 'true' // Short circuit Claude response in tests
-      }
+        USE_MOCK_CLAUDE_RESPONSE: "true", // Short circuit Claude response in tests
+      },
     });
 
-    console.log('Script completed successfully');
+    console.log("Script completed successfully");
   } catch (error) {
-    console.error('Error running script:', error);
+    console.error("Error running script:", error);
     process.exit(1);
   }
 }
