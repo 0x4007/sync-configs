@@ -12,8 +12,8 @@ if (!ANTHROPIC_API_KEY) {
 
 export async function getModifiedContent(originalContent: string, instruction: string, parserCode: string, repoUrl: string): Promise<string> {
   // Short circuit with mock response if environment variable is set
-  if (process.env.USE_MOCK_CLAUDE_RESPONSE === 'true') {
-    return fs.readFileSync('tests/fixtures/ubiquity.yml', 'utf8');
+  if (process.env.USE_MOCK_CLAUDE_RESPONSE === "true") {
+    return fs.readFileSync("tests/fixtures/ubiquity.yml", "utf8");
   }
 
   const pluginUrls = parsePluginUrls(originalContent);

@@ -5,7 +5,6 @@ on:
     branches:
       - chore/use-ubiquity-os-auth
 
-
 jobs:
   run-start:
     runs-on: ubuntu-latest
