@@ -1,3 +1,4 @@
+import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import { Target } from "./targets";
 
@@ -30,12 +31,26 @@ export async function createPullRequest({
   defaultBranch: string;
   instruction: string;
 }) {
-  const token = process.env.PERSONAL_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+  // Check for GitHub App credentials
+  const appId = process.env.APP_ID;
+  const privateKey = process.env.APP_PRIVATE_KEY;
+
+  if (!appId || !privateKey) {
+    throw new Error("GitHub App credentials (APP_ID, APP_PRIVATE_KEY) are not set");
   }
 
-  const octokit = new Octokit({ auth: token });
+  // Create Octokit instance with GitHub App authentication
+  const octokit = new Octokit({
+    authStrategy: createAppAuth,
+    auth: {
+      appId,
+      privateKey,
+      installationId: process.env.APP_INSTALLATION_ID,
+    },
+  });
+
+  // Log which installation we're using
+  console.log(`Using installation ID: ${process.env.APP_INSTALLATION_ID} for ${target.owner}/${target.repo}`);
 
   console.log(`Attempting to create PR for owner: ${target.owner}, repo: ${target.repo}`);
   console.log(`Branch: ${branchName}, Base: ${defaultBranch}`);
@@ -49,7 +64,7 @@ export async function createPullRequest({
       title: `chore: update \`${configFileName}\``,
       head: branchName,
       base: defaultBranch,
-      body: `Requested by @${process.env.GITHUB_ACTOR}:
+      body: `Via @${process.env.ACTOR}:
 
 > ${instruction}`,
     });
@@ -57,18 +72,31 @@ export async function createPullRequest({
     console.log(`Pull request created: ${response.data.html_url}`);
     return response.data.html_url;
   } catch (error) {
-    console.error("Error creating pull request:", error instanceof Error ? error.message : String(error));
-    console.error("Request details:", {
-      owner: target.owner,
-      repo: target.repo,
-      head: branchName,
-      base: defaultBranch,
-    });
-
     const octokitError = error as OctokitError;
-    if (octokitError.response) {
-      console.error("Response status:", octokitError.response.status);
-      console.error("Response data:", octokitError.response.data);
+    if (octokitError.response?.status === 403) {
+      console.error(`
+Error: Failed to create pull request. This may be an installation scope issue.
+- Repository: ${target.owner}/${target.repo}
+- Branch: ${branchName}
+- Error: ${octokitError.response.data.message}
+
+The app can push code but not create PRs, suggesting it might be using different installation tokens.
+Try reinstalling the app directly on the repository: https://github.com/apps/ubiquity-os/installations/new
+
+Branch '${branchName}' has been pushed. You may need to create the pull request manually for now.
+`);
+    } else {
+      console.error("Error creating pull request:", error instanceof Error ? error.message : String(error));
+      console.error("Request details:", {
+        owner: target.owner,
+        repo: target.repo,
+        head: branchName,
+        base: defaultBranch,
+      });
+      if (octokitError.response) {
+        console.error("Response status:", octokitError.response.status);
+        console.error("Response data:", octokitError.response.data);
+      }
     }
     throw error; // Re-throw to ensure proper error handling upstream
   }

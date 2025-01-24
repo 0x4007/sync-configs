@@ -8,7 +8,9 @@
     "node": "20.10.0"
   },
   "scripts": {
+    "configure-git": "tsx scripts/configure-local-git.ts",
     "start": "tsx src/index.ts",
+    "dev-start": "tsx tests/dev-start.ts",
     "build": "tsx build/esbuild-build.ts",
     "format": "run-s format:lint format:prettier format:cspell",
     "format:lint": "eslint --fix .",
@@ -28,10 +30,14 @@
   ],
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
+    "@octokit/auth-app": "^7.1.4",
     "@octokit/rest": "^21.0.2",
+    "@types/jsonwebtoken": "^9.0.8",
     "dotenv": "^16.4.4",
     "inquirer": "^11.1.0",
     "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.9",
     "simple-git": "^3.27.0"
   },
   "devDependencies": {

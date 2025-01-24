@@ -12,3 +12,4 @@ coverage
 junit.xml
 src/fixtures/
 .swp
+.git-credentials

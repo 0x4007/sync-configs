@@ -12,7 +12,7 @@ function initializeGit(localDir: string): SimpleGit {
     binary: "git",
     maxConcurrentProcesses: 6,
     trimmed: false,
-    config: [`user.name=${process.env.GITHUB_ACTOR}`, `user.email=${process.env.GITHUB_ACTOR}@users.noreply.github.com`],
+    config: [`user.name=${process.env.ACTOR}`, `user.email=${process.env.EMAIL}`],
   });
 
   git.outputHandler((command, stdout, stderr) => {
@@ -24,18 +24,14 @@ function initializeGit(localDir: string): SimpleGit {
 }
 
 async function setupAuthentication(git: SimpleGit, targetUrl: string) {
-  if (!process.env.PERSONAL_ACCESS_TOKEN) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
-  }
-  const authenticatedUrl = targetUrl.replace("https://github.com", `https://${process.env.GITHUB_ACTOR}:${process.env.PERSONAL_ACCESS_TOKEN}@github.com`);
   await git.removeRemote("origin").catch(() => null);
-  await git.addRemote("origin", authenticatedUrl);
-  console.log("Configured authenticated remote URL");
+  await git.addRemote("origin", targetUrl);
+  console.log("Configured remote URL");
 }
 
 function createCommitMessage(instruction: string, isGitHubActions: boolean): string {
   if (isGitHubActions) {
-    return ["chore: update", instruction, `Requested by @${process.env.GITHUB_ACTOR}`].join("\n\n");
+    return ["chore: update", instruction, `Via @${process.env.ACTOR}`].join("\n\n");
   }
   return ["chore: update configuration using UbiquityOS Configurations Agent", instruction].join("\n\n");
 }
@@ -105,7 +101,7 @@ async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: s
       console.log(`Successfully pushed branch ${branchName} to ${target.url}`);
     } catch (error) {
       console.error("Push failed with error:", error);
-      console.error(`Note: Ensure @${process.env.GITHUB_ACTOR} has write access to ${target.url}`);
+      console.error(`Note: Ensure @${process.env.ACTOR} has write access to ${target.url}`);
       throw error;
     }
   }

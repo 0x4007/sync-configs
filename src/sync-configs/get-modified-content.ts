@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import * as fs from "fs";
 import { fetchManifests } from "./fetch-manifests";
 import { parsePluginUrls } from "./parse-plugin-urls";
 import { renderPrompt } from "./render-prompt";
@@ -10,6 +11,11 @@ if (!ANTHROPIC_API_KEY) {
 }
 
 export async function getModifiedContent(originalContent: string, instruction: string, parserCode: string, repoUrl: string): Promise<string> {
+  // Short circuit with mock response if environment variable is set
+  if (process.env.USE_MOCK_CLAUDE_RESPONSE === "true") {
+    return fs.readFileSync("tests/fixtures/ubiquity.yml", "utf8");
+  }
+
   const pluginUrls = parsePluginUrls(originalContent);
   const manifests = await fetchManifests(pluginUrls);
   const prompt = await renderPrompt(originalContent, parserCode, JSON.stringify(manifests), repoUrl);
@@ -34,7 +40,7 @@ export async function getModifiedContent(originalContent: string, instruction: s
 
   let fullContent = "";
   for await (const chunk of stream) {
-    if (chunk.type === "content_block_delta") {
+    if (chunk.type === "content_block_delta" && "text" in chunk.delta) {
       const content = chunk.delta.text;
       if (content) {
         fullContent += content;

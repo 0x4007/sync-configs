@@ -1,21 +1,12 @@
-name: Start Program
+name: DEV Start Program
 
 on:
-  workflow_dispatch:
-    inputs:
-      editor_instruction:
-        description: "Provide instructions for editing the YAML configuration. More detailed and specific instructions will yield better results."
-        required: true
-        type: string
-      target_repo:
-        description: "URL of the git repository to target"
-        required: true
-        type: string
-      use_mock_response:
-        description: "Use mock Claude response (for testing)"
-        required: false
-        type: boolean
-        default: false
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
 
 jobs:
   run-start:
@@ -28,15 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "20.10.0"
 
       - name: Install dependencies
         run: |
-          bun install
-          bun add jsonwebtoken
+          npm install
+          npm install -g tsx
 
       - name: Get Installation ID
         id: get_installation
@@ -56,6 +47,9 @@ jobs:
             console.log(jwt.sign(payload, privateKey, { algorithm: 'RS256' }));
           ")
 
+          # Debug JWT
+          echo "JWT token generated successfully"
+
           # Get installation ID using JWT
           RESPONSE=$(curl -s -L \
             -H "Accept: application/vnd.github+json" \
@@ -63,14 +57,12 @@ jobs:
             -H "Authorization: Bearer $JWT" \
             "https://api.github.com/app/installations")
 
-          # Extract org name from repository URL
-          TARGET_ORG=$(echo "${{ github.event.inputs.target_repo }}" | sed -n 's/.*github\.com\/\([^/]*\)\/.*/\1/p')
-          echo "Target organization: $TARGET_ORG"
+          echo "API Response: $RESPONSE"
 
-          INSTALLATION_ID=$(echo "$RESPONSE" | jq -r ".[] | select(.account.login==\"$TARGET_ORG\") | .id")
+          INSTALLATION_ID=$(echo "$RESPONSE" | jq -r '.[] | select(.account.login=="ubiquity") | .id')
 
           if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "null" ]; then
-            echo "Error: Failed to get installation ID for org $TARGET_ORG"
+            echo "Error: Failed to get installation ID"
             echo "Full response:"
             echo "$RESPONSE" | jq '.'
             exit 1
@@ -98,15 +90,15 @@ jobs:
           echo "https://ubiquity-os[bot]:${{ steps.generate_token.outputs.token }}@github.com" > ~/.git-credentials
 
       - name: Run start script
-        run: bun run start "${{ github.event.inputs.target_repo }}"
+        run: tsx src/index.ts "https://github.com/ubiquity/.ubiquity-os.git"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
+          EDITOR_INSTRUCTION: "insert all missing defaults"
           INTERACTIVE: "false"
           ACTOR: "ubiquity-os[bot]"
           EMAIL: "ubiquity-os[bot]@users.noreply.github.com"
           APP_ID: ${{ secrets.APP_ID }}
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          USE_MOCK_CLAUDE_RESPONSE: ${{ github.event.inputs.use_mock_response }}
+          USE_MOCK_CLAUDE_RESPONSE: "true"
           AUTH_TOKEN: ${{ steps.generate_token.outputs.token }}
           APP_INSTALLATION_ID: ${{ steps.get_installation.outputs.installation_id }}

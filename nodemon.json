@@ -1,0 +1,12 @@
+{
+  "watch": ["src/**/*", "tests/**/*"],
+  "ext": "ts,json",
+  "exec": "bun run dev-start",
+  "ignore": ["node_modules/*", "src/fixtures/*"],
+  "delay": 5000,
+  "events": {
+    "restart": "rm -rf src/fixtures/*",
+    "exit": "rm -rf src/fixtures/*",
+    "crash": "rm -rf src/fixtures/*"
+  }
+}
