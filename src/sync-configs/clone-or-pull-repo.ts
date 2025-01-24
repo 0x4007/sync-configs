@@ -13,7 +13,7 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
   }
 
   // Prepare authenticated URL if we have a token
-  const authenticatedUrl = token ? target.url.replace("https://", `https://${token}@`) : target.url;
+  const authenticatedUrl = token ? target.url.replace("https://github.com", `https://${process.env.GITHUB_ACTOR}:${token}@github.com`) : target.url;
 
   if (fs.existsSync(repoPath)) {
     // The repository directory exists; initialize git with this directory
