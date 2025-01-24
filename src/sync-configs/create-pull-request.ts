@@ -30,9 +30,9 @@ export async function createPullRequest({
   defaultBranch: string;
   instruction: string;
 }) {
-  const token = process.env.GIT_AUTH_TOKEN;
+  const token = process.env.PERSONAL_ACCESS_TOKEN;
   if (!token) {
-    throw new Error("GIT_AUTH_TOKEN is not set");
+    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
   }
 
   const octokit = new Octokit({ auth: token });
