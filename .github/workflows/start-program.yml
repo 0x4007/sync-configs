@@ -12,12 +12,18 @@ on:
         required: false
         type: string
 
-# This allows the token to access other repositories in the organization
-permissions: write-all
+permissions:
+  contents: write
+  pull-requests: write
+  repository-projects: write
 
 jobs:
   run-start:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,4 +50,4 @@ jobs:
           EDITOR_INSTRUCTION: ${{ github.event.inputs.editor_instruction }}
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GIT_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
