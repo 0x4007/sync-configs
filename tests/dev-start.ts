@@ -133,7 +133,8 @@ async function main() {
         INTERACTIVE: process.env.INTERACTIVE,
         ACTOR: process.env.ACTOR,
         EMAIL: process.env.EMAIL,
-        AUTH_TOKEN: token // Use the GitHub App token instead of AUTH_TOKEN
+        AUTH_TOKEN: token, // Use the GitHub App token instead of AUTH_TOKEN
+        USE_MOCK_CLAUDE_RESPONSE: 'true' // Short circuit Claude response in tests
       }
     });
 
