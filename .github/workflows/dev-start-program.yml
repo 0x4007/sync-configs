@@ -3,31 +3,30 @@ name: DEV Start Program
 on:
   push:
     branches:
-      - fix/actions-auth-2
+      - fix/actions-auth-3
 
 permissions:
   contents: write
   pull-requests: write
+  repository-projects: write
 
 jobs:
   run-start:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ github.token }}
 
       - name: Configure Git
         run: |
-          # Set up credentials for authentication
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           git config --global credential.helper store
-          echo "https://x-access-token:${{ github.token }}@github.com" > ~/.git-credentials
-          chmod 600 ~/.git-credentials
-
-          # Set up commit identity
-          git config --global user.name "UbiquityOS Configurations Agent[bot]"
-          git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
+          echo "https://${{ github.actor }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com" > ~/.git-credentials
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -44,4 +43,5 @@ jobs:
           EDITOR_INSTRUCTION: "insert all missing defaults"
           INTERACTIVE: "false"
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
+          # GITHUB_TOKEN: ${{ github.token }}
+          GIT_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
