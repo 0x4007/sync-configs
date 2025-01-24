@@ -26,6 +26,7 @@ export async function applyChanges({
     binary: "git",
     maxConcurrentProcesses: 6,
     trimmed: false,
+    config: ["user.name=UbiquityOS Configurations Agent[bot]", "user.email=ubiquity-os[bot]@users.noreply.github.com"],
   });
 
   git.outputHandler((command, stdout, stderr) => {
@@ -34,20 +35,20 @@ export async function applyChanges({
   });
 
   const isGitHubActions = !!process.env.GITHUB_ACTIONS;
-  console.log(`Operating in ${isGitHubActions ? 'GitHub Actions' : 'local'} environment`);
+  console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
   if (isGitHubActions) {
-    console.log(`Using workflow dispatcher's permissions (@${process.env.GITHUB_ACTOR})`);
+    console.log(`Using PERSONAL_ACCESS_TOKEN`);
   }
 
   const defaultBranch = forceBranch || (await getDefaultBranch(target.url));
 
   // Set up authenticated remote URL if we have a token
-  if (process.env.GITHUB_TOKEN) {
-    const authenticatedUrl = target.url.replace('https://', `https://x-access-token:${process.env.GITHUB_TOKEN}@`);
-    await git.removeRemote('origin').catch(() => null); // Ignore error if remote doesn't exist
-    await git.addRemote('origin', authenticatedUrl);
-    console.log('Configured authenticated remote URL');
-  }
+  // if (process.env.GITHUB_TOKEN) {
+  const authenticatedUrl = target.url.replace("https://", `https://x-access-token:${process.env.PERSONAL_ACCESS_TOKEN}@`);
+  await git.removeRemote("origin").catch(() => null); // Ignore error if remote doesn't exist
+  await git.addRemote("origin", authenticatedUrl);
+  console.log("Configured authenticated remote URL");
+  // }
 
   await git.checkout(defaultBranch);
   await git.pull("origin", defaultBranch);
@@ -91,8 +92,8 @@ export async function applyChanges({
 }
 
 async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: string, isInteractive: boolean) {
-  if (!process.env.GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is not set");
+  if (!process.env.PERSONAL_ACCESS_TOKEN) {
+    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
   }
 
   console.log(`Attempting to push to ${target.url}...`);
