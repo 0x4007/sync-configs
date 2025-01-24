@@ -14,10 +14,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: write
-      repository-projects: write
-      statuses: write
-      checks: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,63 +26,15 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Install Octokit Auth App
-        run: npm install @octokit/auth-app
-
       - name: Get Installation ID
         id: get_installation
-        run: |
-          # Create a temporary file for the private key
-          echo "${{ secrets.APP_PRIVATE_KEY }}" > private-key.pem
-
-          # Generate JWT token using node
-          TOKEN=$(node -e "
-            const { createAppAuth } = require('@octokit/auth-app');
-            const fs = require('fs');
-
-            (async () => {
-              try {
-                const privateKey = fs.readFileSync('private-key.pem', 'utf8');
-                const auth = createAppAuth({
-                  appId: ${{ secrets.APP_ID }},
-                  privateKey: privateKey,
-                });
-                const { token } = await auth({ type: 'app' });
-                process.stdout.write(token);
-              } catch (error) {
-                console.error('Error:', error);
-                process.exit(1);
-              }
-            })();
-          ")
-
-          if [ -z "$TOKEN" ]; then
-            echo "Failed to generate token"
-            exit 1
-          fi
-
-          # Get installation ID using the JWT token
-          RESPONSE=$(curl -s \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/orgs/ubiquity/installation)
-
-          if ! echo "$RESPONSE" | jq -e .id > /dev/null 2>&1; then
-            echo "Failed to get installation ID. Response: $RESPONSE"
-            exit 1
-          fi
-
-          INSTALLATION_ID=$(echo "$RESPONSE" | jq -r .id)
-          if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "null" ]; then
-            echo "Invalid installation ID"
-            exit 1
-          fi
-
-          echo "installation_id=$INSTALLATION_ID" >> $GITHUB_ENV
-          echo "INSTALLATION_ID=$INSTALLATION_ID" >> $GITHUB_OUTPUT
-
-          # Clean up
-          rm private-key.pem
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.apps.getOrgInstallation({
+              org: 'ubiquity'
+            });
+            core.setOutput('installation_id', data.id.toString());
 
       - name: Generate GitHub App token
         id: generate_token
@@ -94,9 +42,8 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation_retrieval_mode: organization
-          installation_retrieval_payload: ubiquity
-          permissions: '{"contents": "write", "pull_requests": "write"}'
+          installation_retrieval_mode: id
+          installation_retrieval_payload: "${{ steps.get_installation.outputs.installation_id }}"
 
       - name: Configure Git
         run: |
@@ -117,4 +64,4 @@ jobs:
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           USE_MOCK_CLAUDE_RESPONSE: "true"
           AUTH_TOKEN: ${{ steps.generate_token.outputs.token }}
-          APP_INSTALLATION_ID: ${{ steps.get_installation.outputs.INSTALLATION_ID }}
+          APP_INSTALLATION_ID: "${{ steps.get_installation.outputs.installation_id }}"
