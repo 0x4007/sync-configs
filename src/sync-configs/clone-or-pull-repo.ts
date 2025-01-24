@@ -12,9 +12,6 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
     throw new Error("AUTH_TOKEN is not set");
   }
 
-  // Prepare authenticated URL if we have a token
-  const authenticatedUrl = token ? target.url.replace("https://github.com", `https://ubiquity-os[bot]:${token}@github.com`) : target.url;
-
   if (fs.existsSync(repoPath)) {
     // The repository directory exists; initialize git with this directory
     const git: SimpleGit = simpleGit(repoPath);
@@ -38,7 +35,7 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
       console.log(`Cloning ${target.url}...`);
       fs.mkdirSync(repoPath, { recursive: true });
       const git: SimpleGit = simpleGit();
-      await git.clone(authenticatedUrl, repoPath);
+      await git.clone(target.url, repoPath);
       // After clone, fetch to ensure we have all refs
       await git.cwd(repoPath).fetch("origin");
       await git.reset(["--hard", `origin/${defaultBranch}`]);
