@@ -19,16 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20.10.0'
 
       - name: Install dependencies
-        run: bun install
-
-      - name: Install JWT Dependencies
-        run: npm install jsonwebtoken
+        run: |
+          npm install
+          npm install -g tsx
 
       - name: Get Installation ID
         id: get_installation
@@ -91,7 +90,7 @@ jobs:
           echo "https://ubiquity-os[bot]:${{ steps.generate_token.outputs.token }}@github.com" > ~/.git-credentials
 
       - name: Run start script
-        run: bun run start "https://github.com/ubiquity/.ubiquity-os.git"
+        run: tsx src/index.ts "https://github.com/ubiquity/.ubiquity-os.git"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EDITOR_INSTRUCTION: "insert all missing defaults"
