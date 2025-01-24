@@ -19,13 +19,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git config --global credential.helper store
-          echo "https://${{ github.actor }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com" > ~/.git-credentials
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
@@ -40,6 +33,13 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "UbiquityOS Configurations Agent[bot]"
+          git config --global user.email "ubiquity-os[bot]@users.noreply.github.com"
+          git config --global credential.helper store
+          echo "https://ubiquity-os[bot]:${{ steps.generate_token.outputs.token }}@github.com" > ~/.git-credentials
 
       - name: Run start script
         run: bun run start ${{ github.event.inputs.target_repo }}
