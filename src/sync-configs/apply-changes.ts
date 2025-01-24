@@ -27,7 +27,7 @@ async function setupAuthentication(git: SimpleGit, targetUrl: string) {
   if (!process.env.GITHUB_TOKEN) {
     throw new Error("GITHUB_TOKEN is not set");
   }
-  const authenticatedUrl = targetUrl.replace("https://", `https://x-access-token:${process.env.GITHUB_TOKEN}@`);
+  const authenticatedUrl = targetUrl.replace("https://", `https://${process.env.GITHUB_TOKEN}@`);
   await git.removeRemote("origin").catch(() => null);
   await git.addRemote("origin", authenticatedUrl);
   console.log("Configured authenticated remote URL");

@@ -1,5 +1,5 @@
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
 import simpleGit, { SimpleGit } from "simple-git";
 import { STORAGE_DIR } from "./sync-configs";
 import { Target } from "./targets";
@@ -13,7 +13,7 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
   }
 
   // Prepare authenticated URL if we have a token
-  const authenticatedUrl = token ? target.url.replace("https://", `https://x-access-token:${token}@`) : target.url;
+  const authenticatedUrl = token ? target.url.replace("https://", `https://${token}@`) : target.url;
 
   if (fs.existsSync(repoPath)) {
     // The repository directory exists; initialize git with this directory
