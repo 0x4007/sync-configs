@@ -4,15 +4,12 @@ import simpleGit, { SimpleGit } from "simple-git";
 import { GITHUB_API_HEADERS, GITHUB_OWNER, GITHUB_REPO, GitHubBranch, SYNC_CONFIGS_PREFIX } from "./constants";
 
 async function checkRepoAccess(token: string): Promise<void> {
-  const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`,
-    {
-      headers: {
-        ...GITHUB_API_HEADERS,
-        'Authorization': `token ${token}`
-      }
-    }
-  );
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`, {
+    headers: {
+      ...GITHUB_API_HEADERS,
+      Authorization: `token ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`No access to repository: ${response.statusText}`);
@@ -28,15 +25,12 @@ async function getRemoteBranches(): Promise<GitHubBranch[]> {
   // Verify we have access to the repository
   await checkRepoAccess(token);
 
-  const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/branches?per_page=100`,
-    {
-      headers: {
-        ...GITHUB_API_HEADERS,
-        'Authorization': `token ${token}`
-      }
-    }
-  );
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/branches?per_page=100`, {
+    headers: {
+      ...GITHUB_API_HEADERS,
+      Authorization: `token ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch branches: ${response.statusText}`);
@@ -54,16 +48,13 @@ async function deleteRemoteBranch(branch: string): Promise<void> {
       throw new Error("AUTH_TOKEN not found in environment");
     }
 
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs/heads/${branch}`,
-      {
-        method: 'DELETE',
-        headers: {
-          ...GITHUB_API_HEADERS,
-          'Authorization': `token ${token}`
-        }
-      }
-    );
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs/heads/${branch}`, {
+      method: "DELETE",
+      headers: {
+        ...GITHUB_API_HEADERS,
+        Authorization: `token ${token}`,
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
@@ -133,19 +124,20 @@ export async function cleanupBranches(): Promise<void> {
   try {
     // Get all branches using GitHub API
     const branches = await getRemoteBranches();
-    console.log('Found branches via API:', branches.map((b: GitHubBranch) => b.name));
+    console.log(
+      "Found branches via API:",
+      branches.map((b: GitHubBranch) => b.name)
+    );
 
     // Get default branch name
     const defaultBranch = "development";
 
     // Filter for sync-configs branches that aren't protected or default
     const remoteBranchesToDelete = branches
-      .filter(b => !b.protected && b.name !== defaultBranch && b.name.startsWith(SYNC_CONFIGS_PREFIX))
-      .map(b => b.name);
+      .filter((b) => !b.protected && b.name !== defaultBranch && b.name.startsWith(SYNC_CONFIGS_PREFIX))
+      .map((b) => b.name);
 
-    const skippedBranches = branches
-      .filter(b => (b.protected || b.name === defaultBranch) && b.name.startsWith(SYNC_CONFIGS_PREFIX))
-      .map(b => b.name);
+    const skippedBranches = branches.filter((b) => (b.protected || b.name === defaultBranch) && b.name.startsWith(SYNC_CONFIGS_PREFIX)).map((b) => b.name);
 
     if (skippedBranches.length > 0) {
       console.warn(`Skipping protected/default branches: ${skippedBranches.join(", ")}`);
@@ -153,9 +145,7 @@ export async function cleanupBranches(): Promise<void> {
 
     // Get local branches to delete
     const branchList = await git.branch(["-a"]);
-    const localBranchesToDelete = branchList.all.filter((branch) =>
-      branch.startsWith(SYNC_CONFIGS_PREFIX)
-    );
+    const localBranchesToDelete = branchList.all.filter((branch) => branch.startsWith(SYNC_CONFIGS_PREFIX));
 
     // Clean up branches
     await cleanupLocalBranches(localBranchesToDelete, git);

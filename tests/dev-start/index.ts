@@ -48,11 +48,13 @@ async function main() {
 }
 
 // Execute main function and handle cleanup
-main().then(async () => {
-  // Get a fresh token for cleanup
-  const token = await generateGitHubAppToken(GITHUB_OWNER, GITHUB_REPO);
-  process.env.AUTH_TOKEN = token;
-  await cleanupBranches();
-}).catch(console.error);
+main()
+  .then(async () => {
+    // Get a fresh token for cleanup
+    const token = await generateGitHubAppToken(GITHUB_OWNER, GITHUB_REPO);
+    process.env.AUTH_TOKEN = token;
+    await cleanupBranches();
+  })
+  .catch(console.error);
 
 export { main };

@@ -5,11 +5,7 @@ import { generateGitHubAppToken } from "./github-token";
 
 // Clean up any stale git lock files
 export function cleanupGitLocks(repoPath: string): void {
-  const lockFiles = [
-    path.join(repoPath, ".git", "index.lock"),
-    path.join(repoPath, ".git", "HEAD.lock"),
-    path.join(repoPath, ".git", "config.lock")
-  ];
+  const lockFiles = [path.join(repoPath, ".git", "index.lock"), path.join(repoPath, ".git", "HEAD.lock"), path.join(repoPath, ".git", "config.lock")];
 
   for (const lockFile of lockFiles) {
     if (fs.existsSync(lockFile)) {
