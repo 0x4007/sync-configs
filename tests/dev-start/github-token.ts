@@ -1,8 +1,10 @@
 import * as jwt from "jsonwebtoken";
-import { GITHUB_OWNER, Installation } from "./constants";
+import { Installation } from "./constants";
 import { getRequiredEnvVar } from "./env-utils";
 
-export async function generateGitHubAppToken(): Promise<string> {
+const GITHUB_ACCEPT_HEADER = "application/vnd.github.machine-man-preview+json";
+
+export async function generateGitHubAppToken(owner: string, repo: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iat: now - 60, // Issued 60 seconds ago
@@ -20,7 +22,7 @@ export async function generateGitHubAppToken(): Promise<string> {
     const installationsResponse = await fetch("https://api.github.com/app/installations", {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.machine-man-preview+json",
+        Accept: GITHUB_ACCEPT_HEADER,
       },
     });
 
@@ -33,25 +35,46 @@ export async function generateGitHubAppToken(): Promise<string> {
       throw new Error("No installations found for this GitHub App");
     }
 
-    // Find the specific installation for the target repository
-    const installationId =
-      installations.find((i: Installation) => i.account?.login === GITHUB_OWNER || (i.target_type === "Organization" && i.account?.type === "Organization"))
-        ?.id || installations[0].id;
+    // First try to find installation specifically for this repository
+    const repoInstallationResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/installation`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: GITHUB_ACCEPT_HEADER,
+      },
+    });
 
-    console.log("Using installation ID:", installationId);
-    process.env.INSTALLATION_ID = installationId.toString();
+    let installationId: number;
+    if (repoInstallationResponse.ok) {
+      const repoInstallation = await repoInstallationResponse.json();
+      installationId = repoInstallation.id;
+      console.log(`Found repository-specific installation ID: ${installationId}`);
+    } else {
+      // Fallback to finding org installation
+      const orgInstallation = installations.find(
+        (i: Installation) => i.account?.login === owner || (i.target_type === "Organization" && i.account?.type === "Organization")
+      );
+
+      if (!orgInstallation) {
+        throw new Error(`No installation found for repository ${owner}/${repo} or organization ${owner}`);
+      }
+
+      installationId = orgInstallation.id;
+      console.log(`Using organization installation ID: ${installationId}`);
+    }
+    process.env.APP_INSTALLATION_ID = installationId.toString();
 
     const accessResponse = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.machine-man-preview+json",
+        Accept: GITHUB_ACCEPT_HEADER,
       },
       body: JSON.stringify({
         permissions: {
-          contents: "write" // Only need contents write permission for branch deletion
+          contents: "write",
+          pull_requests: "write",
         },
-        repository_selection: "selected" // Specify we want access to selected repositories
+        repository_selection: "selected", // Specify we want access to selected repositories
       }),
     });
 
@@ -61,13 +84,11 @@ export async function generateGitHubAppToken(): Promise<string> {
 
     const tokenResponse = await accessResponse.json();
     // Verify we have the necessary permissions
-    const requiredPermissions = ['contents'];
-    const missingPermissions = requiredPermissions.filter(
-      perm => !tokenResponse.permissions[perm] || tokenResponse.permissions[perm] !== 'write'
-    );
+    const requiredPermissions = ["contents", "pull_requests"];
+    const missingPermissions = requiredPermissions.filter((perm) => !tokenResponse.permissions[perm] || tokenResponse.permissions[perm] !== "write");
 
     if (missingPermissions.length > 0) {
-      throw new Error(`Token missing required write permissions: ${missingPermissions.join(', ')}`);
+      throw new Error(`Token missing required write permissions: ${missingPermissions.join(", ")}`);
     }
 
     console.log("Installation token response:", {

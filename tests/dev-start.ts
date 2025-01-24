@@ -1,67 +1,14 @@
 import { execSync } from "child_process";
 import { config } from "dotenv";
 import * as fs from "fs";
-import * as jwt from "jsonwebtoken";
 import * as path from "path";
 import simpleGit from "simple-git";
+import { generateGitHubAppToken } from "./dev-start/github-token";
 
 // Load environment variables from .env file
 config();
 
 const requiredEnvVars = ["ANTHROPIC_API_KEY", "EDITOR_INSTRUCTION", "INTERACTIVE", "ACTOR", "EMAIL", "APP_ID", "APP_PRIVATE_KEY"];
-
-// Function to generate GitHub App JWT token
-async function generateGitHubAppToken() {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iat: now - 60, // Issued 60 seconds ago
-    exp: now + 10 * 60, // Expires in 10 minutes
-    iss: getRequiredEnvVar("APP_ID"),
-  };
-
-  try {
-    const privateKey = getRequiredEnvVar("APP_PRIVATE_KEY");
-    const token = jwt.sign(payload, privateKey, {
-      algorithm: "RS256",
-    });
-
-    // Exchange JWT for installation token
-    const response = await fetch("https://api.github.com/app/installations", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to get installations: ${response.statusText}`);
-    }
-
-    const installations = await response.json();
-    if (!installations.length) {
-      throw new Error("No installations found for this GitHub App");
-    }
-
-    const installationId = installations[0].id;
-    const accessResponse = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-
-    if (!accessResponse.ok) {
-      throw new Error(`Failed to get access token: ${accessResponse.statusText}`);
-    }
-
-    const { token: installationToken } = await accessResponse.json();
-    return installationToken;
-  } catch (error) {
-    console.error("Error generating GitHub App token:", error);
-    throw error;
-  }
-}
 
 // Check for required environment variables
 for (const envVar of requiredEnvVars) {
@@ -95,10 +42,22 @@ function cleanupGitLocks(repoPath: string) {
   }
 }
 
+// Parse GitHub repository URL to get owner and repo
+function parseGitHubUrl(url: string): { owner: string; repo: string } {
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)(\.git)?$/);
+  if (!match) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  return {
+    owner: match[1],
+    repo: match[2].replace(".git", ""),
+  };
+}
+
 // Configure Git locally for the test repository
-async function configureGit() {
+async function configureGit(owner: string, repo: string) {
   try {
-    const token = await generateGitHubAppToken();
+    const token = await generateGitHubAppToken(owner, repo);
     const testRepoPath = path.join(__dirname, "..", "src", "fixtures");
 
     // Ensure the fixtures directory exists and clean up any stale locks
@@ -133,10 +92,11 @@ async function configureGit() {
 async function main() {
   // Default repository URL from the workflow
   const repoUrl = "https://github.com/ubiquity/.ubiquity-os.git";
+  const { owner, repo } = parseGitHubUrl(repoUrl);
 
   try {
-    // Configure git first and get the token
-    const token = await configureGit();
+    // Configure git with repository-specific token
+    await configureGit(owner, repo);
 
     // Run the start script with the repository URL
     console.log("Running start script...");
@@ -150,7 +110,8 @@ async function main() {
         INTERACTIVE: getRequiredEnvVar("INTERACTIVE"),
         ACTOR: getRequiredEnvVar("ACTOR"),
         EMAIL: getRequiredEnvVar("EMAIL"),
-        AUTH_TOKEN: token, // Use the GitHub App token instead of AUTH_TOKEN
+        APP_ID: getRequiredEnvVar("APP_ID"),
+        APP_PRIVATE_KEY: getRequiredEnvVar("APP_PRIVATE_KEY"),
         USE_MOCK_CLAUDE_RESPONSE: "true", // Short circuit Claude response in tests
       },
     });
