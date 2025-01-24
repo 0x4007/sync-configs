@@ -52,6 +52,9 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
     throw new Error("AUTH_TOKEN is not set");
   }
 
+  // Prepare authenticated URL if we have a token
+  const authenticatedUrl = token ? target.url.replace("https://github.com", `https://ubiquity-os[bot]:${token}@github.com`) : target.url;
+
   if (fs.existsSync(repoPath)) {
     // Clean up any stale locks before git operations
     cleanupGitLocks(repoPath);
@@ -60,7 +63,10 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
 
     if (await git.checkIsRepo()) {
       try {
-        await configureLocalGitCredentials(git, repoPath);
+        // Configure git locally with bot identity
+        await git.addConfig("user.name", "ubiquity-os[bot]", false, "local");
+        await git.addConfig("user.email", "ubiquity-os[bot]@users.noreply.github.com", false, "local");
+
         console.log(`Fetching updates for ${target.url}...`);
         await git.fetch("origin");
         await git.reset(["--hard", `origin/${defaultBranch}`]);
@@ -79,12 +85,13 @@ export async function cloneOrPullRepo(target: Target, defaultBranch: string): Pr
       fs.mkdirSync(repoPath, { recursive: true });
       cleanupGitLocks(repoPath);
       const git: SimpleGit = simpleGit();
-      await git.clone(target.url, repoPath);
-      // After clone, fetch to ensure we have all refs
-      await git.cwd(repoPath).fetch("origin");
-      await git.reset(["--hard", `origin/${defaultBranch}`]);
+      await git.clone(authenticatedUrl, repoPath);
+
+      // After clone, configure the repository with bot identity
       const localGit = git.cwd(repoPath);
-      await configureLocalGitCredentials(localGit, repoPath);
+      await localGit.addConfig("user.name", "ubiquity-os[bot]", false, "local");
+      await localGit.addConfig("user.email", "ubiquity-os[bot]@users.noreply.github.com", false, "local");
+
       console.log(`Successfully cloned ${target.url}`);
     } catch (error) {
       console.error(`Error cloning ${target.url}:`, error);
