@@ -6,6 +6,40 @@ import { getDefaultBranch } from "./get-default-branch";
 import { STORAGE_DIR } from "./sync-configs";
 import { Target } from "./targets";
 
+function initializeGit(localDir: string): SimpleGit {
+  const git = simpleGit({
+    baseDir: path.join(__dirname, STORAGE_DIR, localDir),
+    binary: "git",
+    maxConcurrentProcesses: 6,
+    trimmed: false,
+    config: ["user.name=UbiquityOS Configurations Agent[bot]", "user.email=ubiquity-os[bot]@users.noreply.github.com"],
+  });
+
+  git.outputHandler((command, stdout, stderr) => {
+    stdout.pipe(process.stdout);
+    stderr.pipe(process.stderr);
+  });
+
+  return git;
+}
+
+async function setupAuthentication(git: SimpleGit, targetUrl: string) {
+  if (!process.env.PERSONAL_ACCESS_TOKEN) {
+    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
+  }
+  const authenticatedUrl = targetUrl.replace("https://", `https://x-access-token:${process.env.PERSONAL_ACCESS_TOKEN}@`);
+  await git.removeRemote("origin").catch(() => null);
+  await git.addRemote("origin", authenticatedUrl);
+  console.log("Configured authenticated remote URL");
+}
+
+function createCommitMessage(instruction: string, isGitHubActions: boolean): string {
+  if (isGitHubActions) {
+    return ["chore: update", instruction, `Requested by @${process.env.GITHUB_ACTOR}`].join("\n\n");
+  }
+  return ["chore: update configuration using UbiquityOS Configurations Agent", instruction].join("\n\n");
+}
+
 export async function applyChanges({
   target,
   filePath,
@@ -21,50 +55,23 @@ export async function applyChanges({
   isInteractive: boolean;
   forceBranch?: string;
 }) {
-  const git: SimpleGit = simpleGit({
-    baseDir: path.join(__dirname, STORAGE_DIR, target.localDir),
-    binary: "git",
-    maxConcurrentProcesses: 6,
-    trimmed: false,
-    config: ["user.name=UbiquityOS Configurations Agent[bot]", "user.email=ubiquity-os[bot]@users.noreply.github.com"],
-  });
-
-  git.outputHandler((command, stdout, stderr) => {
-    stdout.pipe(process.stdout);
-    stderr.pipe(process.stderr);
-  });
-
+  const git = initializeGit(target.localDir);
   const isGitHubActions = !!process.env.GITHUB_ACTIONS;
+
   console.log(`Operating in ${isGitHubActions ? "GitHub Actions" : "local"} environment`);
   if (isGitHubActions) {
     console.log(`Using PERSONAL_ACCESS_TOKEN`);
   }
 
+  await setupAuthentication(git, target.url);
   const defaultBranch = forceBranch || (await getDefaultBranch(target.url));
-
-  // Set up authenticated remote URL if we have a token
-  // if (process.env.GITHUB_TOKEN) {
-  const authenticatedUrl = target.url.replace("https://", `https://x-access-token:${process.env.PERSONAL_ACCESS_TOKEN}@`);
-  await git.removeRemote("origin").catch(() => null); // Ignore error if remote doesn't exist
-  await git.addRemote("origin", authenticatedUrl);
-  console.log("Configured authenticated remote URL");
-  // }
 
   await git.checkout(defaultBranch);
   await git.pull("origin", defaultBranch);
 
   fs.writeFileSync(filePath, modifiedContent, "utf8");
-
   await git.add(target.filePath);
-
-  let commitMessage: string;
-  if (isGitHubActions) {
-    commitMessage = ["chore: update", instruction, `Requested by @${process.env.GITHUB_ACTOR}`].join("\n\n");
-  } else {
-    commitMessage = ["chore: update configuration using UbiquityOS Configurations Agent", instruction].join("\n\n");
-  }
-
-  await git.commit(commitMessage);
+  await git.commit(createCommitMessage(instruction, isGitHubActions));
 
   try {
     const branchName = `sync-configs-${Date.now()}`;
@@ -87,15 +94,11 @@ export async function applyChanges({
     } else {
       console.error(`Error applying changes to ${target.url}:`, error);
     }
-    throw error; // Re-throw to ensure the error is properly handled upstream
+    throw error;
   }
 }
 
 async function pushToGitHubActions(git: SimpleGit, target: Target, branchName: string, isInteractive: boolean) {
-  if (!process.env.PERSONAL_ACCESS_TOKEN) {
-    throw new Error("PERSONAL_ACCESS_TOKEN is not set");
-  }
-
   console.log(`Attempting to push to ${target.url}...`);
 
   if (!isInteractive) {
