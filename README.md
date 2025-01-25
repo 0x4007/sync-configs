@@ -1,4 +1,7 @@
 # `UbiquityOS Configurations Agent`
 
-- Use Claude 3.5 Sonnet to modify our three org configs using plain english!
-- This works on local CLI if you have access to the private repos, as well as the GitHub Actions dispatcher with a personal access token with proper authentication in the secrets.
+- Use Claude 3.5 Sonnet to modify UbiquityOS configs using plain english!
+- Default behavior if you don't specify which repository will target the three Ubiquity organization configs: @ubiquity, @ubiquity-os, @ubiquity-os-marketplace
+- Environments supported:
+   - Local CLI
+   - GitHub Actions dispatcher
